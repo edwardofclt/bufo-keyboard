@@ -1,0 +1,9 @@
+default_platform(:ios)
+
+platform :ios do
+  desc "Regenerate the Xcode project and capture App Store screenshots"
+  lane :screenshots do
+    sh("cd .. && xcodegen generate")
+    capture_screenshots
+  end
+end

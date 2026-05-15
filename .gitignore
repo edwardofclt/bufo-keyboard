@@ -24,3 +24,12 @@ Pods/
 # Editor
 .vscode/
 .idea/
+
+# fastlane
+fastlane/screenshots/
+fastlane/test_output/
+fastlane/report.xml
+fastlane/Preview.html
+fastlane/README.md
+.bundle/
+vendor/bundle/

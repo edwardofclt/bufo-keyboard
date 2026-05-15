@@ -88,3 +88,18 @@ targets:
         ASSETCATALOG_COMPILER_APPICON_NAME: "iMessage App Icon"
         CODE_SIGN_STYLE: Automatic
         SUPPORTS_MACCATALYST: NO
+
+  BufoKeyboardUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources:
+      - path: BufoKeyboardUITests
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.edwardofclt.bufoKeyboard.uitests
+        GENERATE_INFOPLIST_FILE: YES
+        TEST_TARGET_NAME: BufoKeyboard
+        CODE_SIGN_STYLE: Automatic
+        SUPPORTS_MACCATALYST: NO
+    dependencies:
+      - target: BufoKeyboard

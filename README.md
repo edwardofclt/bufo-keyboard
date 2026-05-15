@@ -55,6 +55,34 @@ project.yml               XcodeGen project definition
 scripts/fetch-bufos.sh    Re-fetches the latest bufos from bufo.fun
 ```
 
+## App Store screenshots
+
+The repo has a `fastlane` setup that drives the simulator through onboarding,
+the browser, and a filtered tag view, captures screenshots, and saves them
+under `fastlane/screenshots/<locale>/`.
+
+Prereqs (one-time):
+
+```sh
+gem install bundler
+bundle install                       # installs fastlane
+xcrun simctl list devicetypes        # confirm the simulators in Snapfile exist
+```
+
+Generate:
+
+```sh
+bundle exec fastlane screenshots
+```
+
+The output PNGs in `fastlane/screenshots/en-US/` are at the exact pixel
+dimensions App Store Connect requires for each device. Upload them via
+App Store Connect or `bundle exec fastlane deliver`.
+
+To replace the bundled `BufoKeyboardUITests/SnapshotHelper.swift` with
+fastlane's canonical version (more features, multi-platform), run
+`bundle exec fastlane snapshot init` once.
+
 ## Updating bufos
 
 ```sh

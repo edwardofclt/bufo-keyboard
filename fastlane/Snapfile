@@ -1,0 +1,28 @@
+# Devices to capture. App Store Connect (early 2025) requires one set of
+# iPhone screenshots — either 6.9" (iPhone 16 Pro Max) or 6.5" iPhone — and
+# scales them down to fit the others. Pick what your installed Xcode supports.
+devices([
+  "iPhone 16 Pro Max",   # 6.9" — Xcode 16+
+  "iPhone 15 Pro Max",   # 6.7" — Xcode 15+ (drop one of these if you only need one set)
+  # "iPhone 8 Plus",     # 5.5" — only needed if you still ship to App Store builds <2024
+])
+
+languages([
+  "en-US",
+])
+
+scheme("BufoKeyboard")
+
+# Only run the screenshot tests, not anything else in the scheme.
+only_testing(["BufoKeyboardUITests/BufoKeyboardScreenshots"])
+
+output_directory("./fastlane/screenshots")
+
+# Wipe previous run so the screenshots dir is always current.
+clear_previous_screenshots(true)
+
+# Replaces the status bar with a clean one (9:41, full battery/signal).
+override_status_bar(true)
+
+# Larger text settings can be useful for accessibility marketing shots.
+# launch_arguments(["-UIPreferredContentSizeCategoryName UICTContentSizeCategoryL"])
