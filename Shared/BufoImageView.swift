@@ -12,11 +12,81 @@ struct BufoImageView: View {
         if bufo.fileType.isAnimated {
             AnimatedImage(url: bufo.fileURL)
         } else {
-            Image(uiImage: UIImage(contentsOfFile: bufo.fileURL.path) ?? UIImage())
-                .resizable()
-                .interpolation(.medium)
-                .aspectRatio(contentMode: .fit)
+            CachedStaticImage(bufo: bufo)
         }
+    }
+}
+
+/// Loads and displays a static image using the shared thumbnail cache.
+private struct CachedStaticImage: View {
+    let bufo: Bufo
+    @State private var image: UIImage?
+
+    var body: some View {
+        Group {
+            if let image {
+                Image(uiImage: image)
+                    .resizable()
+                    .interpolation(.medium)
+                    .aspectRatio(contentMode: .fit)
+            } else {
+                Color.secondary.opacity(0.15)
+            }
+        }
+        .task(id: bufo.id) {
+            image = await ThumbnailCache.shared.thumbnail(for: bufo.fileURL)
+        }
+    }
+}
+
+/// Cache for downsampled static image thumbnails. Loads images at display size
+/// to reduce memory and improve scroll performance.
+final class ThumbnailCache: @unchecked Sendable {
+    static let shared = ThumbnailCache()
+
+    private let cache = NSCache<NSURL, UIImage>()
+    private let thumbnailSize: CGFloat = 128 // 64pt * 2x scale
+
+    init() {
+        cache.countLimit = 256
+    }
+
+    func thumbnail(for url: URL) async -> UIImage? {
+        if let cached = cache.object(forKey: url as NSURL) {
+            return cached
+        }
+
+        return await withCheckedContinuation { continuation in
+            DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+                guard let self else {
+                    continuation.resume(returning: nil)
+                    return
+                }
+
+                let thumbnail = self.loadThumbnail(from: url)
+                if let thumbnail {
+                    self.cache.setObject(thumbnail, forKey: url as NSURL)
+                }
+                continuation.resume(returning: thumbnail)
+            }
+        }
+    }
+
+    private func loadThumbnail(from url: URL) -> UIImage? {
+        let options: [CFString: Any] = [
+            kCGImageSourceShouldCache: false,
+            kCGImageSourceCreateThumbnailFromImageAlways: true,
+            kCGImageSourceThumbnailMaxPixelSize: thumbnailSize,
+            kCGImageSourceCreateThumbnailWithTransform: true
+        ]
+
+        guard let source = CGImageSourceCreateWithURL(url as CFURL, nil),
+              let cgImage = CGImageSourceCreateThumbnailAtIndex(source, 0, options as CFDictionary) else {
+            // Fallback to standard loading if thumbnail creation fails
+            return UIImage(contentsOfFile: url.path)
+        }
+
+        return UIImage(cgImage: cgImage)
     }
 }
 
@@ -27,10 +97,17 @@ private struct AnimatedImage: UIViewRepresentable {
         let view = UIImageView()
         view.contentMode = .scaleAspectFit
         view.clipsToBounds = true
+        view.backgroundColor = UIColor.secondarySystemFill.withAlphaComponent(0.15)
         view.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
         view.setContentCompressionResistancePriority(.defaultLow, for: .vertical)
-        configure(view: view, force: true)
+        view.setContentHuggingPriority(.defaultLow, for: .horizontal)
+        view.setContentHuggingPriority(.defaultLow, for: .vertical)
+        loadAnimation(into: view, url: url)
         return view
+    }
+
+    func sizeThatFits(_ proposal: ProposedViewSize, uiView: UIImageView, context: Context) -> CGSize? {
+        proposal.replacingUnspecifiedDimensions()
     }
 
     func updateUIView(_ uiView: UIImageView, context: Context) {
@@ -38,7 +115,7 @@ private struct AnimatedImage: UIViewRepresentable {
         // restarting the GIF every time the parent re-renders.
         if context.coordinator.url != url {
             context.coordinator.url = url
-            configure(view: uiView, force: true)
+            loadAnimation(into: uiView, url: url)
         }
     }
 
@@ -51,16 +128,31 @@ private struct AnimatedImage: UIViewRepresentable {
         init(url: URL) { self.url = url }
     }
 
-    private func configure(view: UIImageView, force: Bool) {
-        if let animated = AnimatedImageCache.shared.image(for: url) {
-            view.image = animated.poster
-            view.animationImages = animated.frames
-            view.animationDuration = animated.duration
-            view.animationRepeatCount = 0
-            if !view.isAnimating { view.startAnimating() }
-        } else {
-            view.image = UIImage(contentsOfFile: url.path)
+    private func loadAnimation(into view: UIImageView, url: URL) {
+        // Check cache first (fast path)
+        if let animated = AnimatedImageCache.shared.cachedImage(for: url) {
+            applyAnimation(animated, to: view)
+            return
         }
+
+        // Decode in background
+        DispatchQueue.global(qos: .userInitiated).async {
+            let animated = AnimatedImageCache.shared.image(for: url)
+            DispatchQueue.main.async {
+                if let animated {
+                    applyAnimation(animated, to: view)
+                }
+            }
+        }
+    }
+
+    private func applyAnimation(_ animated: DecodedAnimation, to view: UIImageView) {
+        view.backgroundColor = .clear
+        view.image = animated.poster
+        view.animationImages = animated.frames
+        view.animationDuration = animated.duration
+        view.animationRepeatCount = 0
+        if !view.isAnimating { view.startAnimating() }
     }
 }
 
@@ -80,9 +172,15 @@ private final class AnimatedImageCache {
     }
 
     init() {
-        cache.countLimit = 64
+        cache.countLimit = 256
     }
 
+    /// Returns cached animation if available, nil otherwise. Does not decode.
+    func cachedImage(for url: URL) -> DecodedAnimation? {
+        cache.object(forKey: url as NSURL)?.value
+    }
+
+    /// Returns animation, decoding and caching if needed. Call from background thread.
     func image(for url: URL) -> DecodedAnimation? {
         if let cached = cache.object(forKey: url as NSURL) { return cached.value }
         guard let decoded = Self.decode(url: url) else { return nil }

@@ -16,15 +16,36 @@ enum BufoStickerService {
         case failed
     }
 
+    /// Copies bufo to pasteboard asynchronously. Completion called on main thread.
+    static func copy(_ bufo: Bufo, completion: @escaping (Result) -> Void) {
+        DispatchQueue.global(qos: .userInitiated).async {
+            guard let data = try? Data(contentsOf: bufo.fileURL) else {
+                DispatchQueue.main.async { completion(.failed) }
+                return
+            }
+
+            // Write under the file's UTI so the host app's "Paste" picks up the
+            // best representation. For animated GIFs we also attach a PNG poster
+            // so apps that only accept stills still get something.
+            var items: [String: Any] = [bufo.fileType.pasteboardUTI: data]
+            if bufo.fileType.isAnimated, let png = UIImage(data: data)?.pngData() {
+                items["public.png"] = png
+            }
+
+            DispatchQueue.main.async {
+                UIPasteboard.general.setItems([items], options: [:])
+                completion(.copied(bufo))
+            }
+        }
+    }
+
+    /// Synchronous version for callers that need immediate result (deprecated).
     @discardableResult
     static func copy(_ bufo: Bufo) -> Result {
         guard let data = try? Data(contentsOf: bufo.fileURL) else {
             return .failed
         }
 
-        // Write under the file's UTI so the host app's "Paste" picks up the
-        // best representation. For animated GIFs we also attach a PNG poster
-        // so apps that only accept stills still get something.
         var items: [String: Any] = [bufo.fileType.pasteboardUTI: data]
         if bufo.fileType.isAnimated, let png = UIImage(data: data)?.pngData() {
             items["public.png"] = png
