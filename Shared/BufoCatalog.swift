@@ -1,88 +1,110 @@
 import Foundation
 
-/// Loads the bundled bufo collection. Bundled in each target's Resources folder
-/// under `Bufos/` alongside `bufo-data.json`.
+/// Loads the bundled bufo collection. Uses a compile-time generated index
+/// (GeneratedBufoIndex) to avoid runtime file scanning and JSON parsing.
+/// Bundled image files live in each target's Resources folder under `Bufos/`.
 final class BufoCatalog: @unchecked Sendable {
     static let shared = BufoCatalog()
 
     private(set) var bufos: [Bufo] = []
     private(set) var allTags: [String] = []
+    private(set) var bufosByTag: [String: [Bufo]] = [:]
+    private(set) var isLoaded: Bool = false
     private var index: [String: Bufo] = [:]
+    private var loadCallbacks: [() -> Void] = []
+    private let lock = NSLock()
 
     private init() {
-        load()
+        // Load asynchronously to avoid blocking the main thread
+        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+            self?.load()
+        }
     }
 
     func bufo(id: String) -> Bufo? { index[id] }
 
+    /// Bufos for a specific tag. O(1) lookup using precomputed index.
+    func bufos(forTag tag: String) -> [Bufo] {
+        bufosByTag[tag] ?? []
+    }
+
+    /// Call this to be notified when loading completes. If already loaded, callback fires immediately.
+    func onLoaded(_ callback: @escaping () -> Void) {
+        lock.lock()
+        if isLoaded {
+            lock.unlock()
+            DispatchQueue.main.async { callback() }
+        } else {
+            loadCallbacks.append(callback)
+            lock.unlock()
+        }
+    }
+
     func search(query: String, tag: String? = nil) -> [Bufo] {
         let q = query.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-        return bufos.filter { b in
-            if let tag, !b.tags.contains(tag) { return false }
-            if q.isEmpty { return true }
-            return b.searchText.contains(q)
+        let source: [Bufo]
+        if let tag {
+            source = bufosByTag[tag] ?? []
+        } else {
+            source = bufos
         }
+        if q.isEmpty { return source }
+        return source.filter { $0.searchText.contains(q) }
     }
 
     private func load() {
         let bundle = Bundle(for: BufoCatalog.self)
 
-        let dataMap = loadDataMap(in: bundle)
-
-        guard let bufosDirURL = bundle.url(forResource: "Bufos", withExtension: nil)
-                ?? Bundle.main.url(forResource: "Bufos", withExtension: nil) else {
-            assertionFailure("Bufos/ directory missing from bundle")
-            return
-        }
-
-        let files = (try? FileManager.default.contentsOfDirectory(
-            at: bufosDirURL,
-            includingPropertiesForKeys: nil,
-            options: [.skipsHiddenFiles]
-        )) ?? []
+        // Resolve bundle URL once. Falls back to main bundle if not found
+        // (e.g. when running in the host app target).
+        let bufosDir = bundle.url(forResource: "Bufos", withExtension: nil)
+            ?? Bundle.main.url(forResource: "Bufos", withExtension: nil)
 
         var loaded: [Bufo] = []
-        loaded.reserveCapacity(files.count)
-        var tagSet = Set<String>()
+        loaded.reserveCapacity(GeneratedBufoIndex.entries.count)
+        var indexMap: [String: Bufo] = [:]
+        indexMap.reserveCapacity(GeneratedBufoIndex.entries.count)
+        var tagBuckets: [String: [Bufo]] = [:]
 
-        for url in files {
-            let ext = url.pathExtension
-            guard let fileType = Bufo.FileType(extension: ext) else { continue }
-            let id = url.deletingPathExtension().lastPathComponent
-            let tags = dataMap[id] ?? []
-            tagSet.formUnion(tags)
-            loaded.append(Bufo(id: id, fileType: fileType, tags: tags, fileURL: url))
-        }
-
-        loaded.sort { $0.id < $1.id }
-        self.bufos = loaded
-        self.allTags = tagSet.sorted()
-        self.index = Dictionary(uniqueKeysWithValues: loaded.map { ($0.id, $0) })
-    }
-
-    private func loadDataMap(in bundle: Bundle) -> [String: [String]] {
-        guard let url = bundle.url(forResource: "bufo-data", withExtension: "json")
-                ?? Bundle.main.url(forResource: "bufo-data", withExtension: "json"),
-              let data = try? Data(contentsOf: url) else {
-            return [:]
-        }
-
-        struct BufoData: Decodable {
-            struct Entry: Decodable {
-                let id: String
-                let tags: [String]?
+        for entry in GeneratedBufoIndex.entries {
+            guard let fileType = Bufo.FileType(extension: entry.ext) else { continue }
+            // Build URL directly from known filename — no directory enumeration.
+            let fileURL: URL
+            if let dir = bufosDir {
+                fileURL = dir.appendingPathComponent("\(entry.id).\(entry.ext)")
+            } else if let url = bundle.url(forResource: entry.id, withExtension: entry.ext, subdirectory: "Bufos") {
+                fileURL = url
+            } else {
+                continue
             }
-            let bufos: [Entry]
+
+            let bufo = Bufo(id: entry.id, fileType: fileType, tags: entry.tags, fileURL: fileURL)
+            loaded.append(bufo)
+            indexMap[entry.id] = bufo
+            for tag in entry.tags {
+                tagBuckets[tag, default: []].append(bufo)
+            }
         }
 
-        guard let decoded = try? JSONDecoder().decode(BufoData.self, from: data) else {
-            return [:]
+        let tags = GeneratedBufoIndex.allTags
+
+        // Update on main thread and notify callbacks
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self else { return }
+            self.bufos = loaded
+            self.allTags = tags
+            self.bufosByTag = tagBuckets
+            self.index = indexMap
+
+            self.lock.lock()
+            self.isLoaded = true
+            let callbacks = self.loadCallbacks
+            self.loadCallbacks = []
+            self.lock.unlock()
+
+            for callback in callbacks {
+                callback()
+            }
         }
-        var map: [String: [String]] = [:]
-        map.reserveCapacity(decoded.bufos.count)
-        for entry in decoded.bufos {
-            map[entry.id] = entry.tags ?? []
-        }
-        return map
     }
 }

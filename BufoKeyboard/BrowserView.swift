@@ -5,6 +5,7 @@ struct BrowserView: View {
     @State private var selectedTag: String? = nil
     @State private var toast: String? = nil
     @State private var showSettings = false
+    @State private var isLoaded = false
 
     private let catalog = BufoCatalog.shared
 
@@ -15,15 +16,32 @@ struct BrowserView: View {
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
-                tagBar
-                Divider()
-                grid
+                if isLoaded {
+                    tagBar
+                    Divider()
+                    grid
+                } else {
+                    Spacer()
+                    ProgressView()
+                    Spacer()
+                }
             }
             .navigationTitle("Bufos")
+            .onAppear {
+                if catalog.isLoaded {
+                    isLoaded = true
+                } else {
+                    catalog.onLoaded { isLoaded = true }
+                }
+            }
             .navigationBarTitleDisplayMode(.inline)
             .searchable(text: $query, placement: .navigationBarDrawer(displayMode: .always),
                         prompt: "Search \(catalog.bufos.count) bufos")
             .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Link("GitHub",
+                         destination: URL(string: "https://github.com/edwardofclt/bufo-keyboard")!)
+                }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button { showSettings = true } label: {
                         Image(systemName: "info.circle")
@@ -97,12 +115,14 @@ struct BrowserView: View {
     }
 
     private func tap(_ bufo: Bufo) {
-        let result = BufoStickerService.copy(bufo)
-        if case .copied = result {
-            RecentsStore.shared.record(bufo)
-            showToast("Copied \(bufo.displayName) — paste anywhere")
-        } else {
-            showToast("Couldn't copy that bufo")
+        showToast("Copying...")
+        BufoStickerService.copy(bufo) { result in
+            if case .copied = result {
+                RecentsStore.shared.record(bufo)
+                showToast("Copied \(bufo.displayName) — paste anywhere")
+            } else {
+                showToast("Couldn't copy that bufo")
+            }
         }
     }
 

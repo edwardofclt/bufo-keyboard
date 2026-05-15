@@ -21,19 +21,22 @@ targets:
   BufoKeyboard:
     type: application
     platform: iOS
+    preBuildScripts:
+      - name: Generate Bufo Index
+        script: python3 "$SRCROOT/Scripts/generate-bufo-index.py"
+        basedOnDependencyAnalysis: false
     sources:
       - path: BufoKeyboard
       - path: Shared
       - path: Bufos
         type: folder
-      - path: bufo-data.json
       - path: LICENSE
         optional: true
       - path: NOTICE
         optional: true
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: fun.bufo.BufoKeyboard
+        PRODUCT_BUNDLE_IDENTIFIER: com.edwardofclt.bufoKeyboard
         PRODUCT_NAME: "Bufo Keyboard"
         INFOPLIST_FILE: BufoKeyboard/Info.plist
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
@@ -43,20 +46,44 @@ targets:
         SUPPORTS_MACCATALYST: NO
     dependencies:
       - target: BufoKeyboardExtension
+      - target: BufoMessagesExtension
 
   BufoKeyboardExtension:
     type: app-extension
     platform: iOS
+    preBuildScripts:
+      - name: Generate Bufo Index
+        script: python3 "$SRCROOT/Scripts/generate-bufo-index.py"
+        basedOnDependencyAnalysis: false
     sources:
       - path: BufoKeyboardExtension
       - path: Shared
       - path: Bufos
         type: folder
-      - path: bufo-data.json
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: fun.bufo.BufoKeyboard.BufoKeyboardExtension
-        PRODUCT_NAME: "Bufos"
+        PRODUCT_BUNDLE_IDENTIFIER: com.edwardofclt.bufoKeyboard.keyboard
+        PRODUCT_NAME: "Bufo Stickers"
         INFOPLIST_FILE: BufoKeyboardExtension/Info.plist
+        CODE_SIGN_STYLE: Automatic
+        SUPPORTS_MACCATALYST: NO
+
+  BufoMessagesExtension:
+    type: app-extension.messages
+    platform: iOS
+    preBuildScripts:
+      - name: Generate Bufo Index
+        script: python3 "$SRCROOT/Scripts/generate-bufo-index.py"
+        basedOnDependencyAnalysis: false
+    sources:
+      - path: BufoMessagesExtension
+      - path: Shared
+      - path: Bufos
+        type: folder
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.edwardofclt.bufoKeyboard.messages
+        PRODUCT_NAME: "Bufo Messages"
+        INFOPLIST_FILE: BufoMessagesExtension/Info.plist
         CODE_SIGN_STYLE: Automatic
         SUPPORTS_MACCATALYST: NO

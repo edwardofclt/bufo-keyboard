@@ -5,16 +5,21 @@ final class KeyboardViewController: UIInputViewController {
 
     private var hostingController: UIHostingController<KeyboardRootView>?
     private var heightConstraint: NSLayoutConstraint?
+    private var searchActive: Bool = false
 
     override func viewDidLoad() {
         super.viewDidLoad()
 
-        let root = KeyboardRootView(
+        // Start with loading state - don't access BufoCatalog yet to avoid blocking
+        var root = KeyboardRootView(
             hasFullAccess: hasFullAccess,
-            onAdvance: { [weak self] in self?.advanceToNextInputMode() },
-            onBackspace: { [weak self] in self?.textDocumentProxy.deleteBackward() },
-            onInsertText: { [weak self] text in self?.textDocumentProxy.insertText(text) }
+            isLoaded: false
         )
+        root.onSearchActiveChanged = { [weak self] active in
+            guard let self else { return }
+            self.searchActive = active
+            self.applyKeyboardHeight()
+        }
 
         let host = UIHostingController(rootView: root)
         host.view.translatesAutoresizingMaskIntoConstraints = false
@@ -32,6 +37,21 @@ final class KeyboardViewController: UIInputViewController {
         ])
 
         self.hostingController = host
+
+        // Defer catalog access until after the view is on screen
+        DispatchQueue.main.async { [weak self] in
+            if BufoCatalog.shared.isLoaded {
+                withAnimation(.easeIn(duration: 0.15)) {
+                    self?.hostingController?.rootView.isLoaded = true
+                }
+            } else {
+                BufoCatalog.shared.onLoaded { [weak self] in
+                    withAnimation(.easeIn(duration: 0.15)) {
+                        self?.hostingController?.rootView.isLoaded = true
+                    }
+                }
+            }
+        }
     }
 
     override func viewWillAppear(_ animated: Bool) {
@@ -52,7 +72,11 @@ final class KeyboardViewController: UIInputViewController {
     }
 
     private func applyKeyboardHeight() {
-        let height: CGFloat = traitCollection.verticalSizeClass == .compact ? 260 : 320
+        // When search is active, the mini-QWERTY adds ~165pt. Grow the keyboard
+        // to keep enough room for the bufo grid above it.
+        let isCompact = traitCollection.verticalSizeClass == .compact
+        let baseHeight: CGFloat = isCompact ? 260 : 320
+        let height = searchActive ? baseHeight + 170 : baseHeight
         if let existing = heightConstraint {
             existing.constant = height
         } else {

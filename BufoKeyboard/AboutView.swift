@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 struct AboutView: View {
     @Environment(\.dismiss) private var dismiss
@@ -11,8 +12,12 @@ struct AboutView: View {
                 }
 
                 Section("Enable the keyboard") {
-                    Link("Open iOS Settings", destination: URL(string: UIApplication.openSettingsURLString)!)
-                    Text("Settings → General → Keyboard → Keyboards → Add New Keyboard → Bufos → Allow Full Access")
+                    Button("Open Settings") {
+                        if let url = URL(string: UIApplication.openSettingsURLString) {
+                            UIApplication.shared.open(url)
+                        }
+                    }
+                    Text("Then go to: General → Keyboard → Keyboards → Add New Keyboard → Bufo Stickers → Allow Full Access")
                         .font(.footnote).foregroundStyle(.secondary)
                 }
 
