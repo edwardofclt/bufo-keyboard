@@ -26,14 +26,10 @@ targets:
       - path: Shared
       - path: Bufos
         type: folder
-        buildPhase: resources
       - path: bufo-data.json
-        buildPhase: resources
       - path: LICENSE
-        buildPhase: resources
         optional: true
       - path: NOTICE
-        buildPhase: resources
         optional: true
     settings:
       base:
@@ -56,9 +52,7 @@ targets:
       - path: Shared
       - path: Bufos
         type: folder
-        buildPhase: resources
       - path: bufo-data.json
-        buildPhase: resources
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: fun.bufo.BufoKeyboard.BufoKeyboardExtension
