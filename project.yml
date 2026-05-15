@@ -1,0 +1,68 @@
+name: BufoKeyboard
+options:
+  bundleIdPrefix: fun.bufo
+  deploymentTarget:
+    iOS: "16.0"
+  developmentLanguage: en
+  createIntermediateGroups: true
+  xcodeVersion: "15.0"
+
+settings:
+  base:
+    MARKETING_VERSION: "1.0.0"
+    CURRENT_PROJECT_VERSION: "1"
+    SWIFT_VERSION: "5.9"
+    IPHONEOS_DEPLOYMENT_TARGET: "16.0"
+    TARGETED_DEVICE_FAMILY: "1,2"
+    ENABLE_USER_SCRIPT_SANDBOXING: NO
+    GENERATE_INFOPLIST_FILE: NO
+
+targets:
+  BufoKeyboard:
+    type: application
+    platform: iOS
+    sources:
+      - path: BufoKeyboard
+      - path: Shared
+      - path: Bufos
+        type: folder
+        buildPhase: resources
+      - path: bufo-data.json
+        buildPhase: resources
+      - path: LICENSE
+        buildPhase: resources
+        optional: true
+      - path: NOTICE
+        buildPhase: resources
+        optional: true
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: fun.bufo.BufoKeyboard
+        PRODUCT_NAME: "Bufo Keyboard"
+        INFOPLIST_FILE: BufoKeyboard/Info.plist
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
+        DEVELOPMENT_ASSET_PATHS: "\"BufoKeyboard/Preview Content\""
+        CODE_SIGN_STYLE: Automatic
+        SUPPORTS_MACCATALYST: NO
+    dependencies:
+      - target: BufoKeyboardExtension
+
+  BufoKeyboardExtension:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: BufoKeyboardExtension
+      - path: Shared
+      - path: Bufos
+        type: folder
+        buildPhase: resources
+      - path: bufo-data.json
+        buildPhase: resources
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: fun.bufo.BufoKeyboard.BufoKeyboardExtension
+        PRODUCT_NAME: "Bufos"
+        INFOPLIST_FILE: BufoKeyboardExtension/Info.plist
+        CODE_SIGN_STYLE: Automatic
+        SUPPORTS_MACCATALYST: NO
