@@ -85,5 +85,6 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: com.edwardofclt.bufoKeyboard.messages
         PRODUCT_NAME: "Bufo Messages"
         INFOPLIST_FILE: BufoMessagesExtension/Info.plist
+        ASSETCATALOG_COMPILER_APPICON_NAME: "iMessage App Icon"
         CODE_SIGN_STYLE: Automatic
         SUPPORTS_MACCATALYST: NO
