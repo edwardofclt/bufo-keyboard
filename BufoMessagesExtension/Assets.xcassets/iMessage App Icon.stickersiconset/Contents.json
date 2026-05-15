@@ -30,29 +30,25 @@
     },
     {
       "filename" : "icon-60x45@2x.png",
-      "idiom" : "universal",
-      "platform" : "ios",
+      "idiom" : "iphone",
       "scale" : "2x",
       "size" : "60x45"
     },
     {
       "filename" : "icon-60x45@3x.png",
-      "idiom" : "universal",
-      "platform" : "ios",
+      "idiom" : "iphone",
       "scale" : "3x",
       "size" : "60x45"
     },
     {
       "filename" : "icon-67x50@2x.png",
-      "idiom" : "universal",
-      "platform" : "ios",
+      "idiom" : "ipad",
       "scale" : "2x",
       "size" : "67x50"
     },
     {
       "filename" : "icon-74x55@2x.png",
-      "idiom" : "universal",
-      "platform" : "ios",
+      "idiom" : "ipad",
       "scale" : "2x",
       "size" : "74x55"
     },

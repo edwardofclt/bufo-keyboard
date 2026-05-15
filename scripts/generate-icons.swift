@@ -110,15 +110,18 @@ struct MIcon {
     let h: Int
 }
 
+// iMessage app icons (60x45 iPhone, 67x50/74x55 iPad) must use explicit
+// "iphone"/"ipad" idioms — App Store Connect's validator doesn't recognize
+// them as iMessage app icons when they're declared "universal" (ITMS-90649).
 let messagesIcons: [MIcon] = [
     .init(file: "icon-27x20@2x.png",   size: "27x20",    scale: "2x", idiom: "universal",    platform: "ios", w: 54,   h: 40),
     .init(file: "icon-27x20@3x.png",   size: "27x20",    scale: "3x", idiom: "universal",    platform: "ios", w: 81,   h: 60),
     .init(file: "icon-32x24@2x.png",   size: "32x24",    scale: "2x", idiom: "universal",    platform: "ios", w: 64,   h: 48),
     .init(file: "icon-32x24@3x.png",   size: "32x24",    scale: "3x", idiom: "universal",    platform: "ios", w: 96,   h: 72),
-    .init(file: "icon-60x45@2x.png",   size: "60x45",    scale: "2x", idiom: "universal",    platform: "ios", w: 120,  h: 90),
-    .init(file: "icon-60x45@3x.png",   size: "60x45",    scale: "3x", idiom: "universal",    platform: "ios", w: 180,  h: 135),
-    .init(file: "icon-67x50@2x.png",   size: "67x50",    scale: "2x", idiom: "universal",    platform: "ios", w: 134,  h: 100),
-    .init(file: "icon-74x55@2x.png",   size: "74x55",    scale: "2x", idiom: "universal",    platform: "ios", w: 148,  h: 110),
+    .init(file: "icon-60x45@2x.png",   size: "60x45",    scale: "2x", idiom: "iphone",       platform: nil,   w: 120,  h: 90),
+    .init(file: "icon-60x45@3x.png",   size: "60x45",    scale: "3x", idiom: "iphone",       platform: nil,   w: 180,  h: 135),
+    .init(file: "icon-67x50@2x.png",   size: "67x50",    scale: "2x", idiom: "ipad",         platform: nil,   w: 134,  h: 100),
+    .init(file: "icon-74x55@2x.png",   size: "74x55",    scale: "2x", idiom: "ipad",         platform: nil,   w: 148,  h: 110),
     .init(file: "icon-1024x768.png",   size: "1024x768", scale: "1x", idiom: "ios-marketing",platform: "ios", w: 1024, h: 768),
 ]
 
