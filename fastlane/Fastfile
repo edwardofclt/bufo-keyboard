@@ -1,9 +1,80 @@
 default_platform(:ios)
 
+# Portal sync constants — see CLAUDE.md "App Group identifier"
+TEAM_ID = "6SHL6PHRS9"
+APP_IDS = %w[
+  com.edwardofclt.bufoKeyboard
+  com.edwardofclt.bufoKeyboard.keyboard
+  com.edwardofclt.bufoKeyboard.messages
+].freeze
+ENTITLEMENTS_PATHS = %w[
+  ../BufoKeyboard/BufoKeyboard.entitlements
+  ../BufoKeyboardExtension/BufoKeyboardExtension.entitlements
+  ../BufoMessagesExtension/BufoMessagesExtension.entitlements
+].freeze
+RECENTS_STORE_PATH = "../Shared/RecentsStore.swift"
+APP_GROUP_FRIENDLY_NAME = "Bufo Keyboard Shared Group"
+
 platform :ios do
   desc "Regenerate the Xcode project and capture App Store screenshots"
   lane :screenshots do
     sh("cd .. && xcodegen generate")
     capture_screenshots
+  end
+
+  desc "Enable + associate the App Group on the Apple Developer portal so auto-signing can build provisioning profiles. Run after changing the App Group identifier."
+  lane :sync_portal do
+    user = ENV["FASTLANE_USER"] || UI.user_error!("Set FASTLANE_USER=<apple-id> (and optionally FASTLANE_PASSWORD=<app-specific-password>)")
+    group_id = read_and_verify_app_group!
+
+    UI.header("Syncing App Group '#{group_id}' on team #{TEAM_ID}")
+
+    # 1. Ensure the App Group exists. produce exits nonzero if it already exists;
+    # treat that as success so the lane is idempotent.
+    sh(
+      "fastlane produce group -g #{group_id} -n '#{APP_GROUP_FRIENDLY_NAME}' " \
+      "-u #{user} --team_id #{TEAM_ID}",
+      error_callback: ->(result) { UI.important("produce group: assuming '#{group_id}' already exists") }
+    )
+
+    # 2. Enable App Groups capability + associate the group, on each App ID.
+    APP_IDS.each do |bid|
+      UI.message("→ #{bid}")
+      sh("fastlane produce enable_services -a #{bid} --app-group on -u #{user} --team_id #{TEAM_ID}")
+      sh("fastlane produce associate_group -a #{bid} #{group_id} -u #{user} --team_id #{TEAM_ID}")
+    end
+
+    UI.success("Portal sync complete. Re-run Xcode Cloud — auto-signing will fetch the new profiles.")
+  end
+
+  # Reads the App Group ID from the first entitlements file and verifies that
+  # every other declared location matches. The .entitlements files are the
+  # signing source of truth; if anything else drifts, fail loud so the dev
+  # discovers it here instead of from a failed archive export.
+  private_lane :read_and_verify_app_group! do
+    authoritative = group_id_from_entitlements(ENTITLEMENTS_PATHS.first)
+
+    mismatches = []
+    ENTITLEMENTS_PATHS.drop(1).each do |path|
+      found = group_id_from_entitlements(path)
+      mismatches << "#{path}: '#{found}'" if found != authoritative
+    end
+
+    swift_value = File.read(RECENTS_STORE_PATH)[/appGroupID\s*=\s*"([^"]+)"/, 1]
+    mismatches << "#{RECENTS_STORE_PATH}: '#{swift_value}'" if swift_value != authoritative
+
+    unless mismatches.empty?
+      UI.user_error!(
+        "App Group identifier drift detected. #{ENTITLEMENTS_PATHS.first} declares " \
+        "'#{authoritative}', but:\n  - #{mismatches.join("\n  - ")}\n" \
+        "Bring all four locations into sync before running sync_portal."
+      )
+    end
+
+    authoritative
+  end
+
+  def group_id_from_entitlements(path)
+    sh("/usr/libexec/PlistBuddy -c 'Print :com.apple.security.application-groups:0' #{path}", log: false).strip
   end
 end
