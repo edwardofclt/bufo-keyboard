@@ -1,10 +1,10 @@
 # Devices to capture. App Store Connect (early 2025) requires:
-#   * one iPhone set — 6.9" (16 Pro Max) preferred, 6.5" (15 Pro Max) fallback
+#   * one iPhone set — 6.5" (iPhone Xs Max) covers the 6.5" display class
 #   * one iPad set   — 13" (iPad Pro M4) preferred, 12.9" (6th gen) fallback
 # Apple scales these down for older device sizes automatically.
 devices([
-  "iPhone 16 Pro Max",                        # 6.9" — Xcode 16+
-  "iPhone 15 Pro Max",                        # 6.7" — Xcode 15+
+  "iPhone 16 Pro",                            # 6.3" — Xcode 16+
+  "iPhone Xs Max",                            # 6.5"
   "iPad Pro 13-inch (M4)",                    # 13"  — Xcode 16+
   "iPad Pro (12.9-inch) (6th generation)",    # 12.9" — Xcode 14+
 ])
