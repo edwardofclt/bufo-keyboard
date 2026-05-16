@@ -1,19 +1,21 @@
 import Foundation
 
-/// Tracks recently-used bufos so the keyboard can show them at the top.
-/// Stored in the standard UserDefaults of the calling process; the main app
-/// and the extension each maintain their own list (no App Group required to
-/// ship). If you set up an App Group, swap `UserDefaults.standard` for
-/// `UserDefaults(suiteName: "group.fun.bufo.BufoKeyboard")` and recents will
-/// be shared.
+/// Tracks recently-used bufos. Stored in the shared App Group container so the
+/// main app, keyboard extension, and iMessage extension all see the same list —
+/// tapping a bufo in any surface populates the keyboard's Recent tab next time
+/// it's used. Falls back to standard defaults if the App Group isn't
+/// provisioned (e.g. development builds without entitlements).
 final class RecentsStore {
     static let shared = RecentsStore()
+
+    /// Must match the value declared in every target's .entitlements file.
+    static let appGroupID = "group.fun.bufo.BufoKeyboard"
 
     private let key = "fun.bufo.BufoKeyboard.recents"
     private let limit = 32
     private let defaults: UserDefaults
 
-    init(defaults: UserDefaults = .standard) {
+    init(defaults: UserDefaults = UserDefaults(suiteName: RecentsStore.appGroupID) ?? .standard) {
         self.defaults = defaults
     }
 

@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 struct BrowserView: View {
     @State private var query: String = ""
@@ -79,6 +80,7 @@ struct BrowserView: View {
                 .clipShape(Capsule())
         }
         .buttonStyle(.plain)
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
     }
 
     private var grid: some View {
@@ -105,22 +107,25 @@ struct BrowserView: View {
         if let toast {
             Text(toast)
                 .font(.subheadline.weight(.medium))
-                .foregroundStyle(.white)
+                .foregroundStyle(.primary)
                 .padding(.horizontal, 16).padding(.vertical, 10)
-                .background(Color.black.opacity(0.85))
-                .clipShape(Capsule())
+                .background(.ultraThinMaterial, in: Capsule())
+                .overlay(Capsule().strokeBorder(Color.secondary.opacity(0.25), lineWidth: 0.5))
                 .padding(.bottom, 24)
                 .transition(.move(edge: .bottom).combined(with: .opacity))
         }
     }
 
     private func tap(_ bufo: Bufo) {
+        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
         showToast("Copying...")
         BufoStickerService.copy(bufo) { result in
             if case .copied = result {
+                UINotificationFeedbackGenerator().notificationOccurred(.success)
                 RecentsStore.shared.record(bufo)
                 showToast("Copied \(bufo.displayName) — paste anywhere")
             } else {
+                UINotificationFeedbackGenerator().notificationOccurred(.error)
                 showToast("Couldn't copy that bufo")
             }
         }

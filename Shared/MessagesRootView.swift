@@ -145,6 +145,7 @@ struct MessagesRootView: View {
             .clipShape(Capsule())
         }
         .buttonStyle(.plain)
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
     }
 
     private var grid: some View {
@@ -220,7 +221,7 @@ private struct BufoMessageCell: View {
         }
         .buttonStyle(BufoCellButtonStyle())
         .accessibilityLabel(bufo.displayName)
-        .task {
+        .task(id: bufo.id) {
             image = await ThumbnailCache.shared.thumbnail(for: bufo.fileURL)
         }
     }

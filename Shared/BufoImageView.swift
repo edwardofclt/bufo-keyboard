@@ -49,6 +49,9 @@ final class ThumbnailCache: @unchecked Sendable {
 
     init() {
         cache.countLimit = 256
+        // ~8 MB ceiling. The keyboard extension's 70 MB process cap means
+        // we'd rather evict aggressively than risk being killed.
+        cache.totalCostLimit = 8 * 1024 * 1024
     }
 
     func thumbnail(for url: URL) async -> UIImage? {
@@ -65,11 +68,15 @@ final class ThumbnailCache: @unchecked Sendable {
 
                 let thumbnail = self.loadThumbnail(from: url)
                 if let thumbnail {
-                    self.cache.setObject(thumbnail, forKey: url as NSURL)
+                    self.cache.setObject(thumbnail, forKey: url as NSURL, cost: byteCost(of: thumbnail))
                 }
                 continuation.resume(returning: thumbnail)
             }
         }
+    }
+
+    func purge() {
+        cache.removeAllObjects()
     }
 
     private func loadThumbnail(from url: URL) -> UIImage? {
@@ -88,6 +95,20 @@ final class ThumbnailCache: @unchecked Sendable {
 
         return UIImage(cgImage: cgImage)
     }
+}
+
+/// Decoded-RGBA byte cost approximation for NSCache eviction.
+private func byteCost(of image: UIImage) -> Int {
+    guard let cg = image.cgImage else { return 0 }
+    return cg.width * cg.height * 4
+}
+
+/// Drops every decoded image held in memory. Call in response to
+/// `didReceiveMemoryWarning` — the keyboard extension is killed silently
+/// if it exceeds the ~70 MB process cap, so reclaim aggressively.
+func purgeBufoImageCaches() {
+    ThumbnailCache.shared.purge()
+    AnimatedImageCache.shared.purge()
 }
 
 private struct AnimatedImage: UIViewRepresentable {
@@ -152,7 +173,12 @@ private struct AnimatedImage: UIViewRepresentable {
         view.animationImages = animated.frames
         view.animationDuration = animated.duration
         view.animationRepeatCount = 0
-        if !view.isAnimating { view.startAnimating() }
+        // Respect the Reduce Motion accessibility setting — show only the
+        // poster frame instead of looping. The poster is already set above,
+        // so simply skipping startAnimating() leaves the static image visible.
+        if !UIAccessibility.isReduceMotionEnabled && !view.isAnimating {
+            view.startAnimating()
+        }
     }
 }
 
@@ -166,13 +192,25 @@ private final class AnimatedImageCache {
     static let shared = AnimatedImageCache()
     private let cache = NSCache<NSURL, CachedAnimation>()
 
+    /// Per-frame decode size. Matches `ThumbnailCache.thumbnailSize` — cells
+    /// render at 48–56pt @2x, so 128px gives some headroom without wasting
+    /// memory. A typical native-resolution GIF frame is ~17× larger.
+    private static let frameThumbnailSize: CGFloat = 128
+
     private final class CachedAnimation {
         let value: DecodedAnimation
         init(_ value: DecodedAnimation) { self.value = value }
     }
 
     init() {
-        cache.countLimit = 256
+        // Animated entries are heavy (each holds N decoded frames), so the
+        // count limit is far lower than the static cache. The cost ceiling
+        // is the real bound; count guards against pathological many-tiny.
+        cache.countLimit = 64
+        // ~16 MB ceiling. With 128×128 RGBA frames (~64 KB each), this lets
+        // ~256 frames total live in cache before eviction kicks in. The
+        // keyboard extension's 70 MB process cap is the constraint.
+        cache.totalCostLimit = 16 * 1024 * 1024
     }
 
     /// Returns cached animation if available, nil otherwise. Does not decode.
@@ -184,8 +222,16 @@ private final class AnimatedImageCache {
     func image(for url: URL) -> DecodedAnimation? {
         if let cached = cache.object(forKey: url as NSURL) { return cached.value }
         guard let decoded = Self.decode(url: url) else { return nil }
-        cache.setObject(CachedAnimation(decoded), forKey: url as NSURL)
+        cache.setObject(CachedAnimation(decoded), forKey: url as NSURL, cost: cost(of: decoded))
         return decoded
+    }
+
+    func purge() {
+        cache.removeAllObjects()
+    }
+
+    private func cost(of animation: DecodedAnimation) -> Int {
+        byteCost(of: animation.poster) * animation.frames.count
     }
 
     private static func decode(url: URL) -> DecodedAnimation? {
@@ -193,12 +239,22 @@ private final class AnimatedImageCache {
         let count = CGImageSourceGetCount(source)
         guard count > 0 else { return nil }
 
+        // Decode each frame at thumbnail size instead of native resolution.
+        // CGImageSourceCreateThumbnailAtIndex respects the index parameter for
+        // animated sources, so each GIF frame is downsampled independently.
+        let options: [CFString: Any] = [
+            kCGImageSourceShouldCache: false,
+            kCGImageSourceCreateThumbnailFromImageAlways: true,
+            kCGImageSourceThumbnailMaxPixelSize: frameThumbnailSize,
+            kCGImageSourceCreateThumbnailWithTransform: true
+        ]
+
         var frames: [UIImage] = []
         frames.reserveCapacity(count)
         var totalDuration: TimeInterval = 0
 
         for i in 0..<count {
-            guard let cgImage = CGImageSourceCreateImageAtIndex(source, i, nil) else { continue }
+            guard let cgImage = CGImageSourceCreateThumbnailAtIndex(source, i, options as CFDictionary) else { continue }
             frames.append(UIImage(cgImage: cgImage))
             totalDuration += frameDuration(source: source, index: i)
         }

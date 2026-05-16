@@ -33,24 +33,18 @@ enum BufoStickerService {
             }
 
             DispatchQueue.main.async {
-                UIPasteboard.general.setItems([items], options: [:])
+                // .expirationDate clears the clipboard after 5 minutes — long
+                // enough for the user to switch apps and paste, short enough
+                // that GIF data doesn't linger in system pasteboard history.
+                // .localOnly suppresses iCloud / Handoff sync of the (possibly
+                // multi-MB) image data to other Apple devices.
+                UIPasteboard.general.setItems([items], options: [
+                    .expirationDate: Date().addingTimeInterval(300),
+                    .localOnly: true
+                ])
                 completion(.copied(bufo))
             }
         }
     }
 
-    /// Synchronous version for callers that need immediate result (deprecated).
-    @discardableResult
-    static func copy(_ bufo: Bufo) -> Result {
-        guard let data = try? Data(contentsOf: bufo.fileURL) else {
-            return .failed
-        }
-
-        var items: [String: Any] = [bufo.fileType.pasteboardUTI: data]
-        if bufo.fileType.isAnimated, let png = UIImage(data: data)?.pngData() {
-            items["public.png"] = png
-        }
-        UIPasteboard.general.setItems([items], options: [:])
-        return .copied(bufo)
-    }
 }

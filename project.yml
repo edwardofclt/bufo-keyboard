@@ -39,6 +39,7 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: com.edwardofclt.bufoKeyboard
         PRODUCT_NAME: "Bufo Keyboard"
         INFOPLIST_FILE: BufoKeyboard/Info.plist
+        CODE_SIGN_ENTITLEMENTS: BufoKeyboard/BufoKeyboard.entitlements
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
         DEVELOPMENT_ASSET_PATHS: "\"BufoKeyboard/Preview Content\""
@@ -65,6 +66,7 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: com.edwardofclt.bufoKeyboard.keyboard
         PRODUCT_NAME: "Bufo Stickers"
         INFOPLIST_FILE: BufoKeyboardExtension/Info.plist
+        CODE_SIGN_ENTITLEMENTS: BufoKeyboardExtension/BufoKeyboardExtension.entitlements
         CODE_SIGN_STYLE: Automatic
         SUPPORTS_MACCATALYST: NO
 
@@ -85,6 +87,7 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: com.edwardofclt.bufoKeyboard.messages
         PRODUCT_NAME: "Bufo Messages"
         INFOPLIST_FILE: BufoMessagesExtension/Info.plist
+        CODE_SIGN_ENTITLEMENTS: BufoMessagesExtension/BufoMessagesExtension.entitlements
         ASSETCATALOG_COMPILER_APPICON_NAME: "iMessage App Icon"
         CODE_SIGN_STYLE: Automatic
         SUPPORTS_MACCATALYST: NO

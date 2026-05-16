@@ -27,6 +27,10 @@ struct KeyboardRootView: View {
     /// in-keyboard search QWERTY. The view controller uses this to grow the
     /// keyboard's height constraint so the bufo grid stays visible.
     var onSearchActiveChanged: ((Bool) -> Void)? = nil
+    /// Apple requires every third-party keyboard to provide a way to switch
+    /// back to the previous keyboard. The view controller wires this to
+    /// `advanceToNextInputMode()`.
+    var onAdvanceInputMode: (() -> Void)? = nil
 
     @State private var toast: String? = nil
 
@@ -37,7 +41,8 @@ struct KeyboardRootView: View {
                 KeyboardLoadedContent(
                     hasFullAccess: hasFullAccess,
                     toast: $toast,
-                    onSearchActiveChanged: onSearchActiveChanged
+                    onSearchActiveChanged: onSearchActiveChanged,
+                    onAdvanceInputMode: onAdvanceInputMode
                 )
                 .transition(.opacity.animation(.easeIn(duration: 0.15)))
             } else {
@@ -68,10 +73,10 @@ struct KeyboardRootView: View {
     private func toastView(_ message: String) -> some View {
         Text(message)
             .font(.footnote.weight(.medium))
-            .foregroundStyle(.white)
+            .foregroundStyle(.primary)
             .padding(.horizontal, 14).padding(.vertical, 8)
-            .background(Color.black.opacity(0.85))
-            .clipShape(Capsule())
+            .background(.ultraThinMaterial, in: Capsule())
+            .overlay(Capsule().strokeBorder(Color.secondary.opacity(0.25), lineWidth: 0.5))
     }
 }
 
@@ -82,6 +87,7 @@ private struct KeyboardLoadedContent: View {
     let hasFullAccess: Bool
     @Binding var toast: String?
     let onSearchActiveChanged: ((Bool) -> Void)?
+    let onAdvanceInputMode: (() -> Void)?
 
     /// Page size for the "All" view to keep LazyVGrid instantiation fast.
     private static let allViewPageSize = 150
@@ -99,10 +105,12 @@ private struct KeyboardLoadedContent: View {
     private let catalog = BufoCatalog.shared
 
     init(hasFullAccess: Bool, toast: Binding<String?>,
-         onSearchActiveChanged: ((Bool) -> Void)?) {
+         onSearchActiveChanged: ((Bool) -> Void)?,
+         onAdvanceInputMode: (() -> Void)?) {
         self.hasFullAccess = hasFullAccess
         self._toast = toast
         self.onSearchActiveChanged = onSearchActiveChanged
+        self.onAdvanceInputMode = onAdvanceInputMode
         // Default to Recent tab if user has any recents, otherwise first
         // category alphabetically. Avoids rendering all 1,200+ bufos at launch.
         let catalog = BufoCatalog.shared
@@ -186,45 +194,65 @@ private struct KeyboardLoadedContent: View {
     }
 
     private var searchBar: some View {
-        Button {
-            searchActive = true
-        } label: {
-            HStack(spacing: 6) {
-                Image(systemName: "magnifyingglass")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                if searchQuery.isEmpty {
-                    Text("Search bufos")
-                        .font(.callout)
+        HStack(spacing: 8) {
+            globeButton
+            Button {
+                searchActive = true
+            } label: {
+                HStack(spacing: 6) {
+                    Image(systemName: "magnifyingglass")
+                        .font(.caption)
                         .foregroundStyle(.secondary)
-                } else {
-                    Text(searchQuery)
-                        .font(.callout)
-                        .foregroundStyle(.primary)
-                        .lineLimit(1)
-                }
-                Spacer(minLength: 0)
-                if !searchQuery.isEmpty {
-                    Button {
-                        searchQuery = ""
-                    } label: {
-                        Image(systemName: "xmark.circle.fill")
+                    if searchQuery.isEmpty {
+                        Text("Search bufos")
                             .font(.callout)
                             .foregroundStyle(.secondary)
+                    } else {
+                        Text(searchQuery)
+                            .font(.callout)
+                            .foregroundStyle(.primary)
+                            .lineLimit(1)
                     }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel("Clear search")
+                    Spacer(minLength: 0)
+                    if !searchQuery.isEmpty {
+                        Button {
+                            searchQuery = ""
+                        } label: {
+                            Image(systemName: "xmark.circle.fill")
+                                .font(.callout)
+                                .foregroundStyle(.secondary)
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel("Clear search")
+                    }
                 }
+                .padding(.horizontal, 10)
+                .padding(.vertical, 7)
+                .background(Color.secondary.opacity(0.15))
+                .clipShape(RoundedRectangle(cornerRadius: 8))
             }
-            .padding(.horizontal, 10)
-            .padding(.vertical, 7)
-            .background(Color.secondary.opacity(0.15))
-            .clipShape(RoundedRectangle(cornerRadius: 8))
+            .buttonStyle(.plain)
         }
-        .buttonStyle(.plain)
         .padding(.horizontal, 8)
         .padding(.top, 6)
         .padding(.bottom, 4)
+    }
+
+    /// Apple-required button that switches to the user's next installed
+    /// keyboard. Hit area is enlarged with `.contentShape` so the tappable
+    /// region meets the 44pt accessibility minimum even though the icon is small.
+    private var globeButton: some View {
+        Button {
+            onAdvanceInputMode?()
+        } label: {
+            Image(systemName: "globe")
+                .font(.callout)
+                .foregroundStyle(.secondary)
+                .frame(width: 30, height: 30)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("Next keyboard")
     }
 
     private var tagsBar: some View {
@@ -268,6 +296,7 @@ private struct KeyboardLoadedContent: View {
             .clipShape(Capsule())
         }
         .buttonStyle(.plain)
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
     }
 
     /// Full-keyboard blocker shown when the user hasn't granted Full Access.
@@ -275,7 +304,12 @@ private struct KeyboardLoadedContent: View {
     /// is unusable without it.
     private var fullAccessRequired: some View {
         VStack(spacing: 14) {
-            Spacer(minLength: 0)
+            HStack {
+                globeButton
+                Spacer()
+            }
+            .padding(.horizontal, 8)
+            .padding(.top, 6)
             Image(systemName: "lock.shield.fill")
                 .font(.system(size: 44))
                 .foregroundStyle(.orange)
@@ -363,13 +397,19 @@ private struct KeyboardLoadedContent: View {
             flashToast("Enable Full Access in Settings → Keyboards → Bufos")
             return
         }
+        // iOS may suppress haptics in keyboard extensions depending on the
+        // system "Haptic Keyboard" setting; that's expected — the call is
+        // a no-op when disallowed.
+        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
         flashToast("Copying...")
         BufoStickerService.copy(bufo) { result in
             switch result {
             case .copied:
+                UINotificationFeedbackGenerator().notificationOccurred(.success)
                 RecentsStore.shared.record(bufo)
                 flashToast("Copied — long-press to Paste")
             case .failed:
+                UINotificationFeedbackGenerator().notificationOccurred(.error)
                 flashToast("Couldn't copy that bufo")
             }
         }

@@ -20,6 +20,9 @@ final class KeyboardViewController: UIInputViewController {
             self.searchActive = active
             self.applyKeyboardHeight()
         }
+        root.onAdvanceInputMode = { [weak self] in
+            self?.advanceToNextInputMode()
+        }
 
         let host = UIHostingController(rootView: root)
         host.view.translatesAutoresizingMaskIntoConstraints = false
@@ -69,6 +72,11 @@ final class KeyboardViewController: UIInputViewController {
         // Re-read hasFullAccess on every appearance — the user might have just
         // toggled it in Settings.
         hostingController?.rootView.hasFullAccess = hasFullAccess
+    }
+
+    override func didReceiveMemoryWarning() {
+        super.didReceiveMemoryWarning()
+        purgeBufoImageCaches()
     }
 
     private func applyKeyboardHeight() {
