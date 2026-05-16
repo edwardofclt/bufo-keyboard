@@ -77,6 +77,9 @@ targets:
       - name: Generate Bufo Index
         script: python3 "$SRCROOT/Scripts/generate-bufo-index.py"
         basedOnDependencyAnalysis: false
+      - name: Regenerate iMessage Iconset Contents.json
+        script: python3 "$SRCROOT/Scripts/write-imessage-iconset-json.py"
+        basedOnDependencyAnalysis: false
     sources:
       - path: BufoMessagesExtension
       - path: Shared

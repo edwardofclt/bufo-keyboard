@@ -9,9 +9,9 @@ final class RecentsStore {
     static let shared = RecentsStore()
 
     /// Must match the value declared in every target's .entitlements file.
-    static let appGroupID = "group.fun.bufo.BufoKeyboard"
+    static let appGroupID = "group.com.edwardofclt.bufoKeyboard"
 
-    private let key = "fun.bufo.BufoKeyboard.recents"
+    private let key = "com.edwardofclt.bufoKeyboard.recents"
     private let limit = 32
     private let defaults: UserDefaults
 

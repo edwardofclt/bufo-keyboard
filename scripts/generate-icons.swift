@@ -129,39 +129,10 @@ for icon in messagesIcons {
     writePNG(resized, to: messagesIconsetDir.appendingPathComponent(icon.file))
 }
 
-// Stickersiconset Contents.json — emit ordered keys for stable diffs
-func jsonEntry(_ icon: MIcon) -> String {
-    var parts = [
-        "\"filename\" : \"\(icon.file)\"",
-        "\"idiom\" : \"\(icon.idiom)\"",
-    ]
-    if let p = icon.platform { parts.append("\"platform\" : \"\(p)\"") }
-    parts.append("\"scale\" : \"\(icon.scale)\"")
-    parts.append("\"size\" : \"\(icon.size)\"")
-    return "    {\n      " + parts.joined(separator: ",\n      ") + "\n    }"
-}
+// Contents.json for the stickersiconset is *not* written here. It's regenerated
+// from a Python manifest by the BufoMessagesExtension target's pre-build phase
+// (scripts/write-imessage-iconset-json.py). Keeping the writer in one place
+// prevents the ITMS-90649 regression where Xcode's asset catalog editor silently
+// rewrites the file with "universal" idioms.
 
-let iconsetJSON = """
-{
-  "images" : [
-\(messagesIcons.map(jsonEntry).joined(separator: ",\n"))
-  ],
-  "info" : {
-    "author" : "xcode",
-    "version" : 1
-  }
-}
-"""
-try iconsetJSON.write(to: messagesIconsetDir.appendingPathComponent("Contents.json"), atomically: true, encoding: .utf8)
-
-let assetsJSON = """
-{
-  "info" : {
-    "author" : "xcode",
-    "version" : 1
-  }
-}
-"""
-try assetsJSON.write(to: messagesAssetsDir.appendingPathComponent("Contents.json"), atomically: true, encoding: .utf8)
-
-print("wrote \(messagesIcons.count) messages icons to \(messagesIconsetDir.path)")
+print("wrote \(messagesIcons.count) messages icon PNGs to \(messagesIconsetDir.path)")
