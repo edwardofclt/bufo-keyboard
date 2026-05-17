@@ -93,6 +93,17 @@ This re-clones [tfritzy/bufo.fun](https://github.com/tfritzy/bufo.fun) and
 copies the latest images and `bufo-data.json` into the repo. Rebuild after
 running it.
 
+## Requesting Support
+
+If you encounter any issues or need assistance using Bufo Keyboard, please open a support request:
+
+1. Go to the [GitHub issues page](https://github.com/edwardofclt/bufo-keyboard/issues).
+2. Click **New Issue**.
+3. Select **Support Request** as the issue type.
+4. Fill in the template and provide as much detail as possible, including steps to reproduce, your iOS version, and device model.
+
+We aim to address support requests promptly and appreciate your cooperation in providing detailed information.
+
 ## License & attribution
 
 This app is [MIT licensed](./LICENSE).
