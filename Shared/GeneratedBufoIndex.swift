@@ -3,7 +3,7 @@ import Foundation
 
 /// Compiled-in bufo metadata. Eliminates runtime file scanning and JSON parsing.
 enum GeneratedBufoIndex {
-    /// All bufo IDs sorted alphabetically (count: 1334).
+    /// All bufo IDs sorted alphabetically (count: 1314).
     static let entries: [(id: String, ext: String, tags: [String])] = [
         ("add-bufo", "png", ["request", "ui"]),
         ("all-the-bufo", "png", []),
@@ -207,25 +207,6 @@ enum GeneratedBufoIndex {
         ("bufo-covid", "png", ["covid"]),
         ("bufo-cowboy", "png", ["profession", "accessories"]),
         ("bufo-cozy-blanky", "png", ["cozy", "found-something"]),
-        ("bufo-crewmate-blue", "png", ["amogus", "sus"]),
-        ("bufo-crewmate-blue-bounce", "gif", ["amogus", "animated", "sus"]),
-        ("bufo-crewmate-cyan", "png", ["amogus", "sus"]),
-        ("bufo-crewmate-cyan-bounce", "gif", ["amogus", "animated", "sus"]),
-        ("bufo-crewmate-green", "png", ["amogus", "sus"]),
-        ("bufo-crewmate-green-bounce", "gif", ["amogus", "animated", "sus"]),
-        ("bufo-crewmate-lime", "png", ["amogus", "sus"]),
-        ("bufo-crewmate-lime-bounce", "gif", ["amogus", "animated", "sus"]),
-        ("bufo-crewmate-orange", "png", ["amogus", "sus"]),
-        ("bufo-crewmate-orange-bounce", "gif", ["amogus", "animated", "sus"]),
-        ("bufo-crewmate-pink", "png", ["amogus", "sus"]),
-        ("bufo-crewmate-pink-bounce", "gif", ["amogus", "animated", "sus"]),
-        ("bufo-crewmate-purple", "png", ["amogus", "sus"]),
-        ("bufo-crewmate-purple-bounce", "gif", ["amogus", "animated", "sus"]),
-        ("bufo-crewmate-red", "png", ["amogus", "sus"]),
-        ("bufo-crewmate-red-bounce", "gif", ["amogus", "animated", "sus"]),
-        ("bufo-crewmate-yellow", "png", ["amogus", "sus"]),
-        ("bufo-crewmate-yellow-bounce", "gif", ["amogus", "animated", "sus"]),
-        ("bufo-crewmates", "gif", ["amogus", "animated", "sus"]),
         ("bufo-crikey", "png", ["reference", "accessories"]),
         ("bufo-crumbs", "png", []),
         ("bufo-crustacean", "png", ["software-reference", "animal"]),
@@ -466,7 +447,6 @@ enum GeneratedBufoIndex {
         ("bufo-ice-cream", "png", ["food"]),
         ("bufo-idk", "png", ["unsure"]),
         ("bufo-im-in-danger", "png", ["anxiety"]),
-        ("bufo-imposter", "png", ["sus", "amogus"]),
         ("bufo-in-a-pear-tree", "png", ["holiday"]),
         ("bufo-inception", "png", ["meta"]),
         ("bufo-increases-his-dimensionality-while-trapped-in-the-void", "png", ["void", "meta"]),
@@ -1341,12 +1321,11 @@ enum GeneratedBufoIndex {
         ("you-left-your-typewriter-at-bufos-apartment", "png", []),
     ]
 
-    /// All unique tags sorted alphabetically (count: 117).
+    /// All unique tags sorted alphabetically (count: 116).
     static let allTags: [String] = [
         "accessories",
         "acknowledgement",
         "agree",
-        "amogus",
         "anger",
         "angry",
         "animal",
