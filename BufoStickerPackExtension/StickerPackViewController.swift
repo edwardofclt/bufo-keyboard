@@ -17,8 +17,8 @@ final class StickerPackViewController: MSStickerBrowserViewController {
         stickers.count
     }
 
-    override func stickerBrowserViewController(
-        _ controller: MSStickerBrowserViewController,
+    override func stickerBrowserView(
+        _ stickerBrowserView: MSStickerBrowserView,
         stickerAt index: Int
     ) -> MSSticker {
         stickers[index]
