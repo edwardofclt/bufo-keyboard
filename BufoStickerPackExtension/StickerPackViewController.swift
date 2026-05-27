@@ -1,24 +1,23 @@
 import UIKit
 import Messages
 
-final class StickerPackViewController: MSStickerBrowserViewController, MSStickerBrowserViewDataSource {
+final class StickerPackViewController: MSStickerBrowserViewController {
     private var stickers: [MSSticker] = []
     private let catalog = BufoCatalog.shared
 
     override func viewDidLoad() {
         super.viewDidLoad()
         stickerBrowserView.backgroundColor = UIColor.systemBackground
-        stickerBrowserView.dataSource = self
         catalog.onLoaded { [weak self] in
             self?.beginNormalization()
         }
     }
 
-    func numberOfStickers(in stickerBrowserView: MSStickerBrowserView) -> Int {
+    override func numberOfStickers(in stickerBrowserView: MSStickerBrowserView) -> Int {
         stickers.count
     }
 
-    func stickerBrowserViewController(
+    override func stickerBrowserViewController(
         _ controller: MSStickerBrowserViewController,
         stickerAt index: Int
     ) -> MSSticker {
