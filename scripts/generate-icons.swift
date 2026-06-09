@@ -3,7 +3,7 @@
 //   1. Opaque (white-flattened) AppIcon at
 //      BufoKeyboard/Assets.xcassets/AppIcon.appiconset/AppIcon.png
 //   2. iMessage app icon set at
-//      BufoMessagesExtension/Assets.xcassets/iMessage App Icon.stickersiconset/
+//      BufoStickerPackExtension/Stickers.xcstickers/iMessage App Icon.stickersiconset/
 //      with all sizes required by App Store Connect for iMessage apps.
 //
 // Usage: swift scripts/generate-icons.swift <source.png>
@@ -26,8 +26,7 @@ let srcPath = args[1]
 let scriptDir = URL(fileURLWithPath: (#filePath as NSString).deletingLastPathComponent)
 let repoRoot = scriptDir.deletingLastPathComponent()
 let appIconDir = repoRoot.appendingPathComponent("BufoKeyboard/Assets.xcassets/AppIcon.appiconset")
-let messagesAssetsDir = repoRoot.appendingPathComponent("BufoMessagesExtension/Assets.xcassets")
-let messagesIconsetDir = messagesAssetsDir.appendingPathComponent("iMessage App Icon.stickersiconset")
+let messagesIconsetDir = repoRoot.appendingPathComponent("BufoStickerPackExtension/Stickers.xcstickers/iMessage App Icon.stickersiconset")
 
 func loadCG(_ path: String) -> CGImage {
     guard let src = CGImageSourceCreateWithURL(URL(fileURLWithPath: path) as CFURL, nil),
@@ -130,7 +129,7 @@ for icon in messagesIcons {
 }
 
 // Contents.json for the stickersiconset is *not* written here. It's regenerated
-// from a Python manifest by the BufoMessagesExtension target's pre-build phase
+// from a Python manifest by the BufoStickerPackExtension target's pre-build phase
 // (scripts/write-imessage-iconset-json.py). Keeping the writer in one place
 // prevents the ITMS-90649 regression where Xcode's asset catalog editor silently
 // rewrites the file with "universal" idioms.

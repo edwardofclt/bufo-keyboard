@@ -47,7 +47,6 @@ targets:
         SUPPORTS_MACCATALYST: NO
     dependencies:
       - target: BufoKeyboardExtension
-      - target: BufoMessagesExtension
       - target: BufoStickerPackExtension
 
   BufoKeyboardExtension:
@@ -71,50 +70,27 @@ targets:
         CODE_SIGN_STYLE: Automatic
         SUPPORTS_MACCATALYST: NO
 
-  BufoMessagesExtension:
-    type: app-extension.messages
-    platform: iOS
-    preBuildScripts:
-      - name: Generate Bufo Index
-        script: python3 "$SRCROOT/Scripts/generate-bufo-index.py"
-        basedOnDependencyAnalysis: false
-      - name: Regenerate iMessage Iconset Contents.json
-        script: python3 "$SRCROOT/Scripts/write-imessage-iconset-json.py"
-        basedOnDependencyAnalysis: false
-    sources:
-      - path: BufoMessagesExtension
-      - path: Shared
-      - path: Bufos
-        type: folder
-    settings:
-      base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.edwardofclt.bufoKeyboard.messages
-        PRODUCT_NAME: "Bufo Messages"
-        INFOPLIST_FILE: BufoMessagesExtension/Info.plist
-        CODE_SIGN_ENTITLEMENTS: BufoMessagesExtension/BufoMessagesExtension.entitlements
-        ASSETCATALOG_COMPILER_APPICON_NAME: "iMessage App Icon"
-        CODE_SIGN_STYLE: Automatic
-        SUPPORTS_MACCATALYST: NO
-
+  # Code-free sticker pack (replaces the old BufoMessagesExtension iMessage
+  # app — an app may contain only ONE Messages extension, and only sticker
+  # packs surface in the iOS 17+ system sticker drawer). The .stickerpack
+  # contents are generated from Bufos/ by a pre-build phase and gitignored.
+  # Reuses the .messages bundle ID, which is already registered in the
+  # developer portal (see CLAUDE.md "App Group identifier").
   BufoStickerPackExtension:
-    type: app-extension.messages
+    type: app-extension.messages-sticker-pack
     platform: iOS
     preBuildScripts:
-      - name: Generate Bufo Index
-        script: python3 "$SRCROOT/Scripts/generate-bufo-index.py"
+      - name: Generate Sticker Pack
+        script: python3 "$SRCROOT/Scripts/generate-sticker-pack.py"
         basedOnDependencyAnalysis: false
       - name: Regenerate iMessage Iconset Contents.json
         script: python3 "$SRCROOT/Scripts/write-imessage-iconset-json.py"
         basedOnDependencyAnalysis: false
     sources:
       - path: BufoStickerPackExtension
-      - path: BufoMessagesExtension/Assets.xcassets
-      - path: Shared
-      - path: Bufos
-        type: folder
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.edwardofclt.bufoKeyboard.stickers
+        PRODUCT_BUNDLE_IDENTIFIER: com.edwardofclt.bufoKeyboard.messages
         PRODUCT_NAME: "Bufo Sticker Pack"
         INFOPLIST_FILE: BufoStickerPackExtension/Info.plist
         ASSETCATALOG_COMPILER_APPICON_NAME: "iMessage App Icon"

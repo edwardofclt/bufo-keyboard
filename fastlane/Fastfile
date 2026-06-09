@@ -2,15 +2,15 @@ default_platform(:ios)
 
 # Portal sync constants — see CLAUDE.md "App Group identifier"
 TEAM_ID = "6SHL6PHRS9"
+# .messages now belongs to the code-free sticker pack, which needs no app
+# group entitlement, so only the app and keyboard extension are synced here.
 APP_IDS = %w[
   com.edwardofclt.bufoKeyboard
   com.edwardofclt.bufoKeyboard.keyboard
-  com.edwardofclt.bufoKeyboard.messages
 ].freeze
 ENTITLEMENTS_PATHS = %w[
   ../BufoKeyboard/BufoKeyboard.entitlements
   ../BufoKeyboardExtension/BufoKeyboardExtension.entitlements
-  ../BufoMessagesExtension/BufoMessagesExtension.entitlements
 ].freeze
 RECENTS_STORE_PATH = "../Shared/RecentsStore.swift"
 APP_GROUP_FRIENDLY_NAME = "Bufo Keyboard Shared Group"

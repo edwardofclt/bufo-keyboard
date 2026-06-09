@@ -19,7 +19,12 @@ import sys
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-ICONSET = REPO_ROOT / "BufoMessagesExtension" / "Assets.xcassets" / "iMessage App Icon.stickersiconset"
+ICONSET = (
+    REPO_ROOT
+    / "BufoStickerPackExtension"
+    / "Stickers.xcstickers"
+    / "iMessage App Icon.stickersiconset"
+)
 
 IMAGES = [
     {"filename": "icon-27x20@2x.png",   "idiom": "universal",     "platform": "ios", "scale": "2x", "size": "27x20"},

@@ -4,9 +4,21 @@
 
 The `.xcodeproj` is generated from `project.yml` by xcodegen. Run `xcodegen generate` after editing `project.yml`. Xcode Cloud regenerates it from scratch on every build via `ci_scripts/ci_post_clone.sh`, so the committed `.xcodeproj` is mostly for local development convenience.
 
+## Sticker pack extension — one Messages extension per app
+
+`BufoStickerPackExtension` is a **code-free sticker pack** (`app-extension.messages-sticker-pack`, `NSExtensionPrincipalClass: StickerBrowserViewController` with no binary). It replaced the old `BufoMessagesExtension` iMessage app because:
+
+- An iOS app may contain only **one** Messages extension — App Store upload fails with "Multiple message payload provider extensions found in app but only one is allowed".
+- Only code-free sticker packs appear in the iOS 17+ system sticker drawer; iMessage apps are relegated to the "More" list.
+- There is no real `com.apple.messages.usersticker-pack-extension` extension point; the only Messages extension point is `com.apple.message-payload-provider`.
+
+It reuses the registered `com.edwardofclt.bufoKeyboard.messages` bundle ID (the `.stickers` ID was never registered in the portal).
+
+`Stickers.xcstickers/Sticker Pack.stickerpack/` is **build-generated and gitignored** — a pre-build phase runs `scripts/generate-sticker-pack.py`, which builds one `.sticker` per file in `Bufos/` (skipping files over Apple's 500 KB sticker limit, preferring `.gif` over a same-name static image). Don't add stickers to the catalog by hand; add files to `Bufos/`.
+
 ## iMessage app icon catalog — do not hand-edit Contents.json
 
-`BufoMessagesExtension/Assets.xcassets/iMessage App Icon.stickersiconset/Contents.json` is **build-generated**. The `BufoMessagesExtension` target has a pre-build phase that runs `scripts/write-imessage-iconset-json.py`, which overwrites this file from a Python manifest on every build.
+`BufoStickerPackExtension/Stickers.xcstickers/iMessage App Icon.stickersiconset/Contents.json` is **build-generated**. The `BufoStickerPackExtension` target has a pre-build phase that runs `scripts/write-imessage-iconset-json.py`, which overwrites this file from a Python manifest on every build.
 
 **The manifest is the source of truth.** To add or change an icon, edit `scripts/write-imessage-iconset-json.py`. Do not edit `Contents.json` directly — your changes will be overwritten on the next build.
 
@@ -23,14 +35,13 @@ Xcode's asset catalog editor silently normalizes these to `"idiom": "universal"`
 
 ## App Group identifier
 
-The shared App Group is `group.com.edwardofclt.bufoKeyboard`. It's declared in four places that must stay in sync:
+The shared App Group is `group.com.edwardofclt.bufoKeyboard`. It's declared in three places that must stay in sync:
 
 - `BufoKeyboard/BufoKeyboard.entitlements`
 - `BufoKeyboardExtension/BufoKeyboardExtension.entitlements`
-- `BufoMessagesExtension/BufoMessagesExtension.entitlements`
 - `Shared/RecentsStore.swift` (`appGroupID` constant)
 
-If the identifier ever changes, all four locations must be updated, AND the new group must be registered under team `6SHL6PHRS9` in the Apple Developer portal and associated with each of the three App IDs (`com.edwardofclt.bufoKeyboard`, `.keyboard`, `.messages`). Otherwise `xcodebuild -exportArchive` fails with "Automatic signing cannot update bundle identifier".
+If the identifier ever changes, all three locations must be updated, AND the new group must be registered under team `6SHL6PHRS9` in the Apple Developer portal and associated with the App IDs that use it (`com.edwardofclt.bufoKeyboard`, `.keyboard`). Otherwise `xcodebuild -exportArchive` fails with "Automatic signing cannot update bundle identifier". (`.messages` is now the code-free sticker pack and carries no entitlements.)
 
 ## Bundle ID prefix
 

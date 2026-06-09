@@ -11,6 +11,9 @@ xcuserdata/
 *.xcodeproj/
 *.xcworkspace/
 
+# Generated sticker pack (rebuilt from Bufos/ by scripts/generate-sticker-pack.py)
+BufoStickerPackExtension/Stickers.xcstickers/Sticker Pack.stickerpack/
+
 # CocoaPods
 Pods/
 
